@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 
-String base = "https://shahen2.onrender.com/api/v1/core/";
-String baseLogin = "https://shahen2.onrender.com/api/v1/";
-String baseMandob = "https://shahen2.onrender.com/api/v1/mandob/";
-String websocketBase = "wss://shahen2.onrender.com/ws/";
+String base = "https://uae-django.onrender.com/api/v1/core/";
+String baseLogin = "https://uae-django.onrender.com/api/v1/";
+String baseMandob = "https://uae-django.onrender.com/api/v1/mandob/";
+String websocketBase = "wss://uae-django.onrender.com/ws/";
 String? id;
 String idd = GetStorage().read('id');
 
