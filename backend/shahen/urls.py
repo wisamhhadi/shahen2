@@ -12,7 +12,6 @@ def health_check(request):
     return JsonResponse({"status": "ok", "service": "shahen2"})
 
 urlpatterns = [
-    path('', health_check),
     path('health/', health_check),
     path('admin/', admin.site.urls),
     path('api/v1/<str:app>/<str:model>', ListCreateAutoView.as_view()),
