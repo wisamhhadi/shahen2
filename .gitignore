@@ -1,0 +1,61 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.env
+.venv/
+venv/
+env/
+staticfiles/
+media/
+*.log
+backend/static/admin/
+backend/static/autocomplete_light/
+backend/static/django_extensions/
+backend/static/rest_framework/
+backend/static/vendor/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+
+# Android / Gradle
+**/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# iOS / CocoaPods generated files
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/xcuserdata/
+
+# Archives and generated exports
+*.zip
+*.apk
+*.aab
+*.ipa
+__MACOSX/
+
+# App secrets / generated service configs
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+**/key.properties
+**/*.keystore
