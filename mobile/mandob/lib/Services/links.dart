@@ -1,10 +1,10 @@
-// String base = "http://212.71.233.116/";
 import 'package:flutter/material.dart';
 import 'package:get_storage/get_storage.dart';
 
-String base = "http://109.237.26.174/api/v1/core/";
-String baseLogin = "http://109.237.26.174/api/v1/";
-String baseMandob = "http://109.237.26.174/api/v1/mandob/";
+String base = "https://shahen2.onrender.com/api/v1/core/";
+String baseLogin = "https://shahen2.onrender.com/api/v1/";
+String baseMandob = "https://shahen2.onrender.com/api/v1/mandob/";
+String websocketBase = "wss://shahen2.onrender.com/ws/";
 String? id;
 String idd = GetStorage().read('id');
 

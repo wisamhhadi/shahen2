@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:almandobUAE/Widgets/appbar.dart';
+import 'package:almandobUAE/Services/links.dart';
 
 class Chat extends StatefulWidget {
   final int mandobId;
@@ -26,7 +27,7 @@ class _ChatState extends State<Chat> {
 
  void _connectWebSocket() {
   channel = WebSocketChannel.connect(
-    Uri.parse('ws://109.237.26.174/ws/chat/${widget.mandobId}/'),
+    Uri.parse('${websocketBase}chat/${widget.mandobId}/'),
   );
 
  channel.stream.listen(
