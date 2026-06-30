@@ -18,36 +18,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ENV_FILE = BASE_DIR / '.env'
-if ENV_FILE.exists():
-    for line in ENV_FILE.read_text(encoding='utf-8').splitlines():
-        line = line.strip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, value = line.split('=', 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
-
-
-def env_bool(name, default=False):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
-
-
-def env_list(name, default=None):
-    value = os.getenv(name)
-    if value is None:
-        return default or []
-    return [item.strip() for item in value.split(',') if item.strip()]
-
-
-def env_int(name, default=0):
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return int(value)
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -56,21 +26,14 @@ def env_int(name, default=0):
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_bool("DEBUG", False)
+DEBUG = False
 
-ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["127.0.0.1", "localhost"])
-RENDER_EXTERNAL_HOSTNAME = os.getenv("RENDER_EXTERNAL_HOSTNAME")
-if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS = ['*']
 APPEND_SLASH = False
-SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", False)
-SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", False)
-CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", False)
-SECURE_HSTS_SECONDS = env_int("SECURE_HSTS_SECONDS", 0)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", False)
-SECURE_HSTS_PRELOAD = env_bool("SECURE_HSTS_PRELOAD", False)
-if env_bool("SECURE_PROXY_SSL_HEADER", False):
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if os.getenv('SECURE_PROXY_SSL_HEADER', '').lower() in {'1', 'true', 'yes', 'on'}:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # settings.py
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
@@ -96,6 +59,7 @@ INSTALLED_APPS = [
     'django_cleanup.apps.CleanupConfig',
     'corsheaders',
     'django_filters',
+    'excel_response',
     'simple_history',
     'captain',
     'deliverycompany',
@@ -141,20 +105,16 @@ ASGI_APPLICATION = 'shahen.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        # For development - in-memory channel layer
+        # 'BACKEND': 'channels.layers.InMemoryChannelLayer'
+
+        # For production - Redis channel layer (uncomment below)
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
     },
 }
-
-REDIS_URL = os.getenv("REDIS_URL")
-if REDIS_URL:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [REDIS_URL],
-            },
-        },
-    }
 
 LOGGING = {
     'version': 1,
@@ -181,12 +141,12 @@ DATABASES = {
     }
 }
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv('DATABASE_URL')
 if DATABASE_URL:
-    DATABASES["default"] = dj_database_url.parse(
+    DATABASES['default'] = dj_database_url.parse(
         DATABASE_URL,
         conn_max_age=600,
-        ssl_require=DATABASE_URL.startswith(("postgres://", "postgresql://")),
+        ssl_require=DATABASE_URL.startswith(('postgres://', 'postgresql://')),
     )
 
 
@@ -241,20 +201,17 @@ CACHES = {
 LOGIN_REDIRECT_URL = '/login'
 LOGIN_URL = '/login'
 
-CORS_ORIGIN_ALLOW_ALL = env_bool("CORS_ORIGIN_ALLOW_ALL", DEBUG)
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-])
-CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", CORS_ALLOWED_ORIGINS)
+CORS_ORIGIN_WHITELIST = [
+    "http://127.0.0.1",
+    "http://0.0.0.0"
+]
+
+CSRF_TRUSTED_ORIGINS = []
 if RENDER_EXTERNAL_HOSTNAME:
-    render_origin = f"https://{RENDER_EXTERNAL_HOSTNAME}"
-    if render_origin not in CORS_ALLOWED_ORIGINS:
-        CORS_ALLOWED_ORIGINS.append(render_origin)
-    if render_origin not in CSRF_TRUSTED_ORIGINS:
-        CSRF_TRUSTED_ORIGINS.append(render_origin)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -277,40 +234,12 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-API_AUTH_REQUIRED = env_bool("API_AUTH_REQUIRED", not DEBUG)
-PUBLIC_API_MODELS = {
-    'core': {
-        'Country',
-        'Province',
-        'Language',
-        'Specialty',
-        'CarCompany',
-        'CarModel',
-        'CarColor',
-        'CarCategory',
-        'CarLetter',
-        'CarSize',
-        'ActivityType',
-        'GoodsType',
-        'Trailer',
-        'Banner',
-        'Blog',
-        'Info',
-    },
-}
-PUBLIC_CREATE_MODELS = {
-    ('user', 'User'),
-    ('captain', 'Captain'),
-    ('mandob', 'Mandob'),
-    ('deliverycompany', 'DeliveryCompany'),
-}
-
 REST_FRAMEWORK = {
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     # 'PAGE_SIZE': 25,
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'core.authentication.MultiModelTokenAuthentication',
-    ],
+    # 'DEFAULT_AUTHENTICATION_CLASSES': [
+    #     'rest_framework.authentication.TokenAuthentication',
+    # ],
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),

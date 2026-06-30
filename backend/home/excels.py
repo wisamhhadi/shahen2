@@ -1,4 +1,4 @@
-from .excel_response import ExcelView
+from excel_response import ExcelView
 
 from captain.models import Captain
 from core.models import *

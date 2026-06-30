@@ -1,7 +1,7 @@
-import logging
 import random
 from rest_framework import status
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
 from django.conf import settings
@@ -14,7 +14,6 @@ from rest_framework.views import APIView
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
-from core.authentication import MultiModelTokenAuthentication
 from captain.models import Captain, CaptainToken
 from captain.serializers import CaptainSerializer, CaptainTokenSerializer
 from deliverycompany.models import DeliveryCompany, DeliveryCompanyToken
@@ -31,8 +30,6 @@ permissionsDict = {
     # }
 }
 
-logger = logging.getLogger(__name__)
-
 
 def send_sms(to_number, message_body):
     try:
@@ -46,10 +43,10 @@ def send_sms(to_number, message_body):
 
         return True
     except TwilioRestException as e:
-        logger.warning("Twilio failed to send SMS: %s", e)
+        print(e)
         return False
     except Exception as e:
-        logger.exception("Unexpected SMS error: %s", e)
+        print(e)
         return False
 
 
@@ -351,9 +348,9 @@ class GenericAutoView(GenericAPIView):
     object = None
     excluded_apps = []
     excluded_models = []
-    authentication_classes = [MultiModelTokenAuthentication]
+    authentication_classes = []
     permissions = permissionsDict
-    permission_classes = [IsAuthenticated]
+    permission_classes = []
     filterset_class = None
     # pagination_class = None
 
@@ -362,6 +359,8 @@ class GenericAutoView(GenericAPIView):
         self.set_up(*args, **kwargs)
 
     def set_up(self, *args, **kwargs):
+        self.permission_classes = []
+        self.authentication_classes = []
         # checking kwargs len
         if 2 > len(kwargs) > 3:
             raise Exception("""
@@ -369,6 +368,7 @@ class GenericAutoView(GenericAPIView):
             """)
 
         app = kwargs['app']
+        print(app)
         try:
             if app in settings.INSTALLED_APPS and app not in self.excluded_apps:
                 app = __import__(app)
@@ -381,6 +381,7 @@ class GenericAutoView(GenericAPIView):
             raise e
 
         models = getattr(app, 'models')
+        print(models)
         # checking the model
         model = kwargs['model']
         try:
@@ -395,13 +396,6 @@ class GenericAutoView(GenericAPIView):
             error : the model is not included in models.py ,
             %s
             """ % e)
-
-        if self.is_public_request(kwargs['app'], kwargs['model']):
-            self.authentication_classes = []
-            self.permission_classes = [AllowAny]
-        else:
-            self.authentication_classes = [MultiModelTokenAuthentication]
-            self.permission_classes = [IsAuthenticated]
 
         """
             extract per model permissions and append to the default permission_classes,
@@ -418,18 +412,6 @@ class GenericAutoView(GenericAPIView):
         #     else:
         #         self.authentication_classes = [TokenAuthentication]
         #     self.permission_classes.append(per)
-
-    def is_public_request(self, app, model):
-        if not settings.API_AUTH_REQUIRED:
-            return True
-
-        if self.request.method.lower() == 'get':
-            return model in settings.PUBLIC_API_MODELS.get(app, set())
-
-        if self.request.method.lower() == 'post':
-            return (app, model) in settings.PUBLIC_CREATE_MODELS
-
-        return False
 
     def get_serializer_class(self):
         """
